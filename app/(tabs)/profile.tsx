@@ -1,40 +1,57 @@
-import { View, Text, StyleSheet, FlatList, Image } from 'react-native';
-import { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TextInput, Button, Alert } from 'react-native';
+import { useState, useEffect } from 'react';
 
-// Mock user data (replace this with real user context or props)
-const mockUser = {
-  name: "👤 John Doe",
-  email: "john@example.com",
-  role: "Buyer",
-};
-
-// Mock order history (replace with real API fetch later)
-const mockOrders = [
-  { id: '1', item: 'Clay Pot', date: '2025-08-01', image: 'https://cdn.pixabay.com/photo/2020/06/14/21/45/clay-pot-5300004_1280.jpg' },
-  { id: '2', item: 'Color Pot', date: '2025-08-04', image: 'https://cdn.pixabay.com/photo/2016/09/18/21/28/clay-pot-1672064_1280.jpg' },
-  { id: '3', item: 'Metal Pot', date: '2025-08-06', image: 'https://cdn.pixabay.com/photo/2022/07/07/15/13/pot-7306816_1280.jpg' },
-];
+// Example email from login (should come from secure auth/session)
+const loggedInEmail = "john@example.com";
 
 export default function ProfileScreen() {
-  const [user, setUser] = useState(mockUser);
-  const [orders, setOrders] = useState(mockOrders);
+  const [user, setUser] = useState({
+    name: '',
+    email: loggedInEmail,
+    role: 'Buyer',
+  });
+
+  const [orders, setOrders] = useState([
+    {
+      id: '1',
+      item: 'Clay Pot',
+      date: '2025-08-01',
+      image: 'https://cdn.pixabay.com/photo/2020/06/14/21/45/clay-pot-5300004_1280.jpg',
+    },
+  ]);
+
+  const handleSaveProfile = () => {
+    // Here you would send user data to backend
+    Alert.alert("Profile Saved", `Name: ${user.name}`);
+    // Optionally: fetch or sync updated profile
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>👤 Profile</Text>
 
-      {/* User Info */}
       <View style={styles.profileBox}>
-        <Text style={styles.name}>{user.name}</Text>
-        <Text style={styles.email}>📧 {user.email}</Text>
-        <Text style={styles.role}>🧑‍💼 Role: {user.role}</Text>
+        <Text style={styles.label}>Your Name</Text>
+        <TextInput
+          placeholder="Enter your name"
+          style={styles.input}
+          value={user.name}
+          onChangeText={(name) => setUser({ ...user, name })}
+        />
+
+        <Text style={styles.label}>Email (not editable)</Text>
+        <Text style={styles.readOnlyField}>{user.email}</Text>
+
+        <Text style={styles.label}>Role</Text>
+        <Text style={styles.readOnlyField}>{user.role}</Text>
+
+        <Button title="Save Profile" onPress={handleSaveProfile} />
       </View>
 
-      {/* Order History */}
       <Text style={styles.sectionTitle}>🛍️ Order History</Text>
       <FlatList
         data={orders}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.orderList}
         renderItem={({ item }) => (
           <View style={styles.orderItem}>
@@ -60,14 +77,16 @@ const styles = StyleSheet.create({
   profileBox: {
     backgroundColor: '#fff', padding: 16, borderRadius: 10, marginBottom: 24, elevation: 3,
   },
-  name: {
-    fontSize: 20, fontWeight: 'bold', marginBottom: 6,
+  label: {
+    fontSize: 16, fontWeight: '500', marginTop: 8,
   },
-  email: {
-    fontSize: 16, marginBottom: 4, color: '#333',
+  input: {
+    backgroundColor: '#f1f1f1', padding: 10, borderRadius: 8, marginTop: 4,
+    marginBottom: 8,
   },
-  role: {
-    fontSize: 16, color: '#555',
+  readOnlyField: {
+    backgroundColor: '#f9f9f9', padding: 10, borderRadius: 8, color: '#555',
+    marginBottom: 8,
   },
   sectionTitle: {
     fontSize: 20, fontWeight: '600', marginBottom: 12,
