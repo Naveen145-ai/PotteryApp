@@ -10,6 +10,13 @@ export default function HomeScreen() {
 
   useEffect(() => {
     fetchPots();
+
+    // 🔄 Poll every 5 seconds
+    const interval = setInterval(() => {
+      fetchPots();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const fetchPots = async () => {
@@ -17,8 +24,11 @@ export default function HomeScreen() {
       const res = await fetch("http://192.168.160.242:5000/api/v1/getAllPots");
       const data = await res.json();
       if (data.success) {
+        // Check if new pots are added
+        if (pots.length && data.pots.length > pots.length) {
+          setHasNewPots(true);
+        }
         setPots(data.pots);
-        setHasNewPots(true);
       }
     } catch (error) {
       console.error(error);
@@ -84,10 +94,13 @@ export default function HomeScreen() {
       ListHeaderComponent={renderHeader}
       renderItem={({ item }) => (
         <View style={styles.potItem}>
-          <Image source={{ uri: item.image }} style={styles.image} />
-          <Text>{item.name}</Text>
+          <Image
+            source={{ uri: item.image || "https://i.imgur.com/OQ9qg5h.jpg" }}
+            style={styles.image}
+          />
+          <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
           <Text>{item.category}</Text>
-          <Text>₹{item.price}</Text>
+          <Text style={{ color: "green" }}>₹{item.price}</Text>
         </View>
       )}
     />
