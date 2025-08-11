@@ -93,7 +93,10 @@ export default function HomeScreen() {
       keyExtractor={(item) => item._id}
       ListHeaderComponent={renderHeader}
       renderItem={({ item }) => (
-        <View style={styles.potItem}>
+        <TouchableOpacity
+          style={styles.potItem}
+          onPress={() => router.push({ pathname: '/buy', params: { id: item._id, name: item.name, price: item.price, image: item.image } })}
+        >
           <Image
             source={{ uri: item.image || "https://i.imgur.com/OQ9qg5h.jpg" }}
             style={styles.image}
@@ -101,7 +104,10 @@ export default function HomeScreen() {
           <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
           <Text>{item.category}</Text>
           <Text style={{ color: "green" }}>₹{item.price}</Text>
-        </View>
+          <View style={{ marginTop: 8, backgroundColor: '#007bff', padding: 8, borderRadius: 6 }}>
+            <Text style={{ color: '#fff', textAlign: 'center' }}>Buy Now</Text>
+          </View>
+        </TouchableOpacity>
       )}
     />
   );
