@@ -1,21 +1,21 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Modal, FlatList, Image, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
+import { CartContext } from '../../context/CartContext';// ✅ You will create this file
 
 export default function HomeScreen() {
   const router = useRouter();
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [pots, setPots] = useState([]);
   const [hasNewPots, setHasNewPots] = useState(false);
+  const [selectedPot, setSelectedPot] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const { addToCart } = useContext(CartContext); // ✅ from context
 
   useEffect(() => {
     fetchPots();
-
-    // 🔄 Poll every 5 seconds
-    const interval = setInterval(() => {
-      fetchPots();
-    }, 5000);
-
+    const interval = setInterval(fetchPots, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -24,7 +24,6 @@ export default function HomeScreen() {
       const res = await fetch("http://192.168.160.242:5000/api/v1/getAllPots");
       const data = await res.json();
       if (data.success) {
-        // Check if new pots are added
         if (pots.length && data.pots.length > pots.length) {
           setHasNewPots(true);
         }
@@ -35,9 +34,13 @@ export default function HomeScreen() {
     }
   };
 
+  const handlePotPress = (pot) => {
+    setSelectedPot(pot);
+    setModalVisible(true);
+  };
+
   const renderHeader = () => (
     <View style={styles.container}>
-      {/* Drawer */}
       <Modal visible={drawerVisible} animationType="slide" transparent>
         <View style={styles.drawerOverlay}>
           <View style={styles.drawer}>
@@ -58,14 +61,11 @@ export default function HomeScreen() {
         </View>
       </Modal>
 
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => setDrawerVisible(true)}>
           <Text style={styles.menuIcon}>☰</Text>
         </TouchableOpacity>
         <Text style={styles.title}>🏺 Pottery World</Text>
-
-        {/* Notification Dot */}
         <TouchableOpacity onPress={() => {
           router.push('/notifications');
           setHasNewPots(false);
@@ -75,10 +75,7 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Search */}
       <TextInput placeholder="Search pottery..." style={styles.search} />
-
-      {/* Categories */}
       <Text style={styles.subtitle}>Explore Categories</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
         {/* category buttons */}
@@ -87,29 +84,54 @@ export default function HomeScreen() {
   );
 
   return (
-    <FlatList
-      style={styles.wrapper}
-      data={pots}
-      keyExtractor={(item) => item._id}
-      ListHeaderComponent={renderHeader}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          style={styles.potItem}
-          onPress={() => router.push({ pathname: '/buy', params: { id: item._id, name: item.name, price: item.price, image: item.image } })}
-        >
-          <Image
-            source={{ uri: item.image || "https://i.imgur.com/OQ9qg5h.jpg" }}
-            style={styles.image}
-          />
-          <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
-          <Text>{item.category}</Text>
-          <Text style={{ color: "green" }}>₹{item.price}</Text>
-          <View style={{ marginTop: 8, backgroundColor: '#007bff', padding: 8, borderRadius: 6 }}>
-            <Text style={{ color: '#fff', textAlign: 'center' }}>Buy Now</Text>
+    <>
+      <FlatList
+        style={styles.wrapper}
+        data={pots}
+        keyExtractor={(item) => item._id}
+        ListHeaderComponent={renderHeader}
+        renderItem={({ item }) => (
+          <TouchableOpacity style={styles.potItem} onPress={() => handlePotPress(item)}>
+            <Image source={{ uri: item.image || "https://i.imgur.com/OQ9qg5h.jpg" }} style={styles.image} />
+            <Text style={{ fontWeight: "bold" }}>{item.name}</Text>
+            <Text>{item.category}</Text>
+            <Text style={{ color: "green" }}>₹{item.price}</Text>
+          </TouchableOpacity>
+        )}
+      />
+
+      {/* Add to Cart Modal */}
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 10, width: 300 }}>
+            {selectedPot && (
+              <>
+                <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{selectedPot.name}</Text>
+                <Text>₹{selectedPot.price}</Text>
+                <Image source={{ uri: selectedPot.image || "https://i.imgur.com/OQ9qg5h.jpg" }} style={{ width: 100, height: 100, marginVertical: 10 }} />
+                <TouchableOpacity style={{ backgroundColor: 'green', padding: 10, marginTop: 10, borderRadius: 6 }}
+                  onPress={() => {
+                    addToCart(selectedPot);
+                    setModalVisible(false);
+                  }}>
+                  <Text style={{ color: '#fff', textAlign: 'center' }}>Add to Cart</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ backgroundColor: 'blue', padding: 10, marginTop: 10, borderRadius: 6 }}
+                  onPress={() => {
+                    router.push({ pathname: '/buy', params: { id: selectedPot._id } });
+                    setModalVisible(false);
+                  }}>
+                  <Text style={{ color: '#fff', textAlign: 'center' }}>Buy Now</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => setModalVisible(false)} style={{ marginTop: 10 }}>
+                  <Text style={{ textAlign: 'center', color: 'red' }}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
-        </TouchableOpacity>
-      )}
-    />
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -124,15 +146,7 @@ const styles = StyleSheet.create({
   horizontalScroll: { marginBottom: 20 },
   potItem: { backgroundColor: '#fff', padding: 10, marginBottom: 10, borderRadius: 10 },
   image: { width: 100, height: 100, borderRadius: 8, marginBottom: 8 },
-  redDot: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    width: 10,
-    height: 10,
-    backgroundColor: 'red',
-    borderRadius: 5,
-  },
+  redDot: { position: 'absolute', right: -2, top: -2, width: 10, height: 10, backgroundColor: 'red', borderRadius: 5 },
   drawerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)' },
   drawer: { width: 250, backgroundColor: '#fff', padding: 20, height: '100%' },
   drawerTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
