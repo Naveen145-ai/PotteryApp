@@ -5,11 +5,40 @@ import { CartContext } from '../../context/CartContext';
 const BuyPage = () => {
   const { cart, removeFromCart } = useContext(CartContext);
 
-  const handlePlaceOrder = (item) => {
-    // ✅ Store in DB (API call placeholder)
-    // Example: await fetch("http://your-api/orders", { method: "POST", body: JSON.stringify(item) })
-    Alert.alert('Order placed successfully for', item.name);
-    removeFromCart(item.id); // ✅ Remove from cart after placing order
+  const handlePlaceOrder = async (item) => {
+    try {
+      // Prepare body to match your backend order model
+      const orderBody = {
+        userId: '64f8d8a1b2e3f7c5a1234567', // replace with logged-in userId
+        items: [
+          {
+            potId: item.id, // Your frontend item id must match backend Pot _id
+            name: item.name,
+            price: item.price,
+            image: item.image,
+            quantity: 1
+          }
+        ]
+      };
+
+      const response = await fetch('http://192.168.160.242:5000/api/v1/orders/place', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderBody)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        Alert.alert('Success', `Order placed for ${item.name}`);
+        removeFromCart(item.id); // Remove from cart after placing order
+      } else {
+        Alert.alert('Error', data.message || 'Something went wrong');
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to place order');
+    }
   };
 
   return (
